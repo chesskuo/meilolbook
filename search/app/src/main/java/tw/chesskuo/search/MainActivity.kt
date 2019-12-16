@@ -19,8 +19,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         val spinner = findViewById(R.id.region_spinner) as Spinner
         val nAdapter = ArrayAdapter.createFromResource(this, R.array.region_array, android.R.layout.simple_spinner_item)
-        nAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(nAdapter);
+        nAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.setAdapter(nAdapter)
     }
 
 
