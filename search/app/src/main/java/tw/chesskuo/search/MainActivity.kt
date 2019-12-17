@@ -2,6 +2,7 @@ package tw.chesskuo.search
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -15,6 +16,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import java.text.*
 import java.util.*
 import android.widget.ListView
+import androidx.core.graphics.toColorInt
 import org.json.JSONObject
 
 
@@ -23,9 +25,10 @@ var region = ""
 const val host = ".api.riotgames.com"
 val mode = mapOf("summoner" to "/lol/summoner/v4/summoners/by-name/",
                 "league" to "/lol/league/v4/entries/by-summoner/",
-                "match" to "/lol/match/v4/matchlists/by-account/"
+                "matchList" to "/lol/match/v4/matchlists/by-account/",
+                "match" to "/lol/match/v4/matches/"
             )
-const val api_key = "?api_key=RGAPI-9d877f40-5f36-4ce3-b3bb-f0830e54977d"
+const val api_key = "?api_key=" + "RGAPI-9d877f40-5f36-4ce3-b3bb-f0830e54977d"
 
 
 
@@ -41,6 +44,7 @@ class MainActivity : AppCompatActivity()
 {
     private var id = ""
     private var accountId = ""
+    private var sName = ""
 
     override fun onCreate(savedInstanceState: Bundle?)
     {
@@ -60,6 +64,7 @@ class MainActivity : AppCompatActivity()
         val queue = Volley.newRequestQueue(this)
 
         region = region_spinner.selectedItem.toString()
+
         val url = proto + region + host + mode["summoner"] + summonerName.text + api_key
 
         val jsonReq = JsonObjectRequest(Request.Method.GET, url, null,
@@ -77,7 +82,8 @@ class MainActivity : AppCompatActivity()
 
 //                Toast.makeText(applicationContext, id, Toast.LENGTH_SHORT).show()
 
-                (tmp_layout.findViewById(R.id.profile_name) as TextView).text = it["name"].toString()
+                sName = it["name"].toString()
+                (tmp_layout.findViewById(R.id.profile_name) as TextView).text = sName
                 (tmp_layout.findViewById(R.id.profile_level) as TextView).text = it["summonerLevel"].toString()
                 (tmp_layout.findViewById(R.id.profile_revision) as TextView).text = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.TAIWAN).format(Date(it["revisionDate"].toString().toLong()))
 
@@ -88,7 +94,6 @@ class MainActivity : AppCompatActivity()
                 scroll_list.addView(tmp_layout)
             },
             Response.ErrorListener {
-                Log.i("custom", it.toString())
                 val tmp = TextView(this)
 
                 tmp.text = "Summoner Not Found!"
@@ -103,7 +108,7 @@ class MainActivity : AppCompatActivity()
 
     fun addToList(listview: ListView)
     {
-        val url = proto + region + host + mode["match"] + accountId + api_key  + "&endIndex=20"
+        val url = proto + region + host + mode["matchList"] + accountId + api_key  + "&endIndex=20"
         val queue = Volley.newRequestQueue(this)
         val info :ArrayList<ListView_save> = ArrayList()
 
@@ -113,26 +118,23 @@ class MainActivity : AppCompatActivity()
 
                 for(i in 0 until item.length())
                 {
-                    val picName = JSONObject(idToName[item.getJSONObject(i)["champion"].toString()].toString())["id"].toString()
-                    val name = JSONObject(idToName[item.getJSONObject(i)["champion"].toString()].toString())["name"].toString()
-                    val time = SimpleDateFormat("yyyy-MM-dd", Locale.TAIWAN).format(Date(item.getJSONObject(i)["timestamp"].toString().toLong()))
-
                     info.add(
                         ListView_save(
-                            name,
-                            picName,
+                            item.getJSONObject(i)["gameId"].toString().toLong(),
+                            sName,
+                            JSONObject(idToName[item.getJSONObject(i)["champion"].toString()].toString())["name"].toString(),
+                            JSONObject(idToName[item.getJSONObject(i)["champion"].toString()].toString())["id"].toString(),
                             "VICTORY",
                             "6/6/6",
                             "145",
                             "18000",
-                            time,
+                            SimpleDateFormat("yyyy-MM-dd", Locale.TAIWAN).format(Date(item.getJSONObject(i)["timestamp"].toString().toLong())),
                             "45:00"
                         )
                     )
                 }
             },
-            Response.ErrorListener {}
-        )
+            Response.ErrorListener {})
         queue.add(jsonReq)
 
 //        info.add(ListView_save("冰鳥",R.mipmap.ic_launcher,"VICTORY","6/6/6","145","18000","2019/10/10","45:00"))
@@ -168,7 +170,7 @@ class MainActivity : AppCompatActivity()
 
 
 
-data class ListView_save(var name: String,var image: String,var matchEnd:String,var Scroe:String,var cs:String,var money:String,var date:String,var time:String)
+data class ListView_save(var matchId: Long, var pname: String, var cname: String,var image: String,var matchEnd:String,var Scroe:String,var cs:String,var money:String,var date:String,var time:String)
 
 class CustomAdapter(var context: Context, var champion:ArrayList<ListView_save>):BaseAdapter() {
 
@@ -196,16 +198,60 @@ class CustomAdapter(var context: Context, var champion:ArrayList<ListView_save>)
             viewHolder = view.tag as ViewHolder
         }
 
-        var cham: ListView_save = getItem(position) as ListView_save
-        viewHolder.txtName.text = cham.name
-        viewHolder.txtMatchend.text = cham.matchEnd
-        viewHolder.txtScore.text = cham.Scroe
-        viewHolder.txtCs.text = cham.cs
-        viewHolder.txtMoney.text = cham.money
+
+
+        val cham: ListView_save = getItem(position) as ListView_save
+
+        viewHolder.txtName.text = cham.cname
         viewHolder.txtDate.text = cham.date
-        viewHolder.txtTime.text = cham.time
+
+
+
+        val url = proto + region + host + mode["match"] + cham.matchId.toString() + api_key
 
         val queue = Volley.newRequestQueue(context)
+
+        val jsonReq = JsonObjectRequest(Request.Method.GET, url, null,
+            Response.Listener {
+                var nowId: Int = 0
+
+                val pIdJSONArr = it.getJSONArray("participantIdentities")
+
+                for(i in 0 until pIdJSONArr.length())
+                {
+                    val tmpObj = pIdJSONArr.getJSONObject(i)
+                    if(JSONObject(tmpObj["player"].toString())["summonerName"].toString() == cham.pname)
+                    {
+                        nowId = tmpObj["participantId"].toString().toInt()
+                        break
+                    }
+                }
+
+                val pArr = it.getJSONArray("participants")
+                val tmpPlayer = pArr.getJSONObject(nowId-1)
+                val tmpPlayerStatus = JSONObject(tmpPlayer["stats"].toString())
+
+                val kda = "${tmpPlayerStatus["kills"]}/${tmpPlayerStatus["deaths"]}/${tmpPlayerStatus["assists"]}"
+
+                viewHolder.txtScore.text = kda
+                viewHolder.txtCs.text = tmpPlayerStatus["totalMinionsKilled"].toString()
+                viewHolder.txtMoney.text = tmpPlayerStatus["goldEarned"].toString()
+                viewHolder.txtTime.text = SimpleDateFormat("HH:mm:ss", Locale.TAIWAN).format(Date(it["gameDuration"].toString().toLong()*1000))
+
+                if(tmpPlayerStatus["win"] == true)
+                {
+                    viewHolder.txtMatchend.text = "VICTORY"
+                    viewHolder.txtMatchend.setTextColor("#00ff00".toColorInt())
+                }
+                else
+                {
+                    viewHolder.txtMatchend.text = "DEFEAT"
+                    viewHolder.txtMatchend.setTextColor("#ff0000".toColorInt())
+                }
+            },
+            Response.ErrorListener {})
+        queue.add(jsonReq)
+
         val imgReq = ImageRequest("http://ddragon.leagueoflegends.com/cdn/9.3.1/img/champion/${cham.image}.png",
             Response.Listener<Bitmap> {
                 viewHolder.ivImage.setImageBitmap(it)
