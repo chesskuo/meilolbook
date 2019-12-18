@@ -2,10 +2,8 @@ package tw.chesskuo.search
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -124,29 +122,13 @@ class MainActivity : AppCompatActivity()
                             sName,
                             JSONObject(idToName[item.getJSONObject(i)["champion"].toString()].toString())["name"].toString(),
                             JSONObject(idToName[item.getJSONObject(i)["champion"].toString()].toString())["id"].toString(),
-                            "VICTORY",
-                            "6/6/6",
-                            "145",
-                            "18000",
-                            SimpleDateFormat("yyyy-MM-dd", Locale.TAIWAN).format(Date(item.getJSONObject(i)["timestamp"].toString().toLong())),
-                            "45:00"
+                            SimpleDateFormat("yyyy-MM-dd", Locale.TAIWAN).format(Date(item.getJSONObject(i)["timestamp"].toString().toLong()))
                         )
                     )
                 }
             },
             Response.ErrorListener {})
         queue.add(jsonReq)
-
-//        info.add(ListView_save("冰鳥",R.mipmap.ic_launcher,"VICTORY","6/6/6","145","18000","2019/10/10","45:00"))
-//        info.add(ListView_save("刮哥",R.mipmap.ic_launcher,"DEFEAT","0/6/0","0","20000","2019/10/4","20:00"))
-//        info.add(ListView_save("乞丐大劍",R.mipmap.ic_launcher,"VICTORY","4/2/1","76","10000","2019/10/3","36:00"))
-//        info.add(ListView_save("桶子",R.mipmap.ic_launcher,"VICTORY","1/0/6","127","5000","2019/10/12","38:00"))
-//        info.add(ListView_save("卡撒",R.mipmap.ic_launcher,"VICTORY","7/7/7","300","7800","2019/10/5","30:34"))
-//        info.add(ListView_save("滑起來",R.mipmap.ic_launcher,"VICTORY","6/6/6","0","6666","2019/10/6","30:43"))
-//        info.add(ListView_save("李星",R.mipmap.ic_launcher,"VICTORY","6/6/6","60","8888","2019/10/8","30:55"))
-//        info.add(ListView_save("雷歐娜",R.mipmap.ic_launcher,"VICTORY","6/6/6","99","6666","2019/10/30","31:00"))
-//        info.add(ListView_save("娜米",R.mipmap.ic_launcher,"VICTORY","6/6/6","0","7777","2019/10/21","10:00"))
-//        info.add(ListView_save("賽恩",R.mipmap.ic_launcher,"VICTORY","9/9/9","2","1","2019/10/11","20:00"))
 
         listview.adapter = CustomAdapter(this, info)
     }
@@ -170,7 +152,7 @@ class MainActivity : AppCompatActivity()
 
 
 
-data class ListView_save(var matchId: Long, var pname: String, var cname: String,var image: String,var matchEnd:String,var Scroe:String,var cs:String,var money:String,var date:String,var time:String)
+data class ListView_save(var matchId: Long, var pname: String, var cname: String,var image: String,var date:String)
 
 class CustomAdapter(var context: Context, var champion:ArrayList<ListView_save>):BaseAdapter() {
 
@@ -236,7 +218,7 @@ class CustomAdapter(var context: Context, var champion:ArrayList<ListView_save>)
                 viewHolder.txtScore.text = kda
                 viewHolder.txtCs.text = tmpPlayerStatus["totalMinionsKilled"].toString()
                 viewHolder.txtMoney.text = tmpPlayerStatus["goldEarned"].toString()
-                viewHolder.txtTime.text = SimpleDateFormat("HH:mm:ss", Locale.TAIWAN).format(Date(it["gameDuration"].toString().toLong()*1000))
+                viewHolder.txtTime.text = SimpleDateFormat("mm:ss", Locale.TAIWAN).format(Date(it["gameDuration"].toString().toLong()*1000))
 
                 if(tmpPlayerStatus["win"] == true)
                 {
